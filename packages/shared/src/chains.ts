@@ -1,51 +1,72 @@
 /**
  * Chain configuration.
  *
- * Arc's testnet chain ID and USDC address are NOT yet verified against Arc's
- * docs — see SPEC.md §11. They stay env-driven until someone confirms them;
- * do not hardcode a guess.
+ * Tender spans three chains, each for a reason (SPEC §4):
+ *   Arc      — settlement. Escrow and milestone payouts.
+ *   Sepolia  — identity. ENSv2 subnames.
+ *   Hedera   — metering. The x402-gated bid service.
  */
 
 export interface ChainConfig {
   id: number;
   name: string;
   rpcUrl: string;
-  /** USDC contract, where the chain is a settlement venue. */
-  usdc?: `0x${string}`;
+  explorer?: string;
+  nativeCurrency: { name: string; symbol: string; decimals: number };
 }
 
-function required(name: string): string {
-  const value = process.env[name];
+function env(name: string, fallback?: string): string {
+  const value = process.env[name] ?? fallback;
   if (!value) throw new Error(`Missing required env var: ${name}. See .env.example`);
   return value;
 }
 
-function optionalNumber(name: string): number {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required env var: ${name}. See .env.example`);
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed)) throw new Error(`${name} must be an integer, got "${value}"`);
-  return parsed;
-}
+// ─── Arc: settlement ────────────────────────────────────────────────────────
+export const ARC_TESTNET_CHAIN_ID = 5042002;
 
-/** Settlement. Escrow and milestone payouts live here. */
+/**
+ * On Arc, USDC IS the native gas token, exposed at this precompile with an ERC-20
+ * read interface (name/symbol/decimals/balanceOf/allowance/totalSupply all answer).
+ *
+ * The address has NO bytecode selectors — calls are intercepted natively — so do NOT
+ * assume approve()/transferFrom() behave like a normal token. WorkEscrow therefore
+ * settles in native value and never calls this contract. Use it for reading balances
+ * only, and verify any write path on-chain before depending on it.
+ */
+export const ARC_USDC_PRECOMPILE = "0x3600000000000000000000000000000000000000" as const;
+
 export function arc(): ChainConfig {
   return {
-    id: optionalNumber("ARC_CHAIN_ID"),
+    id: Number(env("ARC_CHAIN_ID", String(ARC_TESTNET_CHAIN_ID))),
     name: "Arc Testnet",
-    rpcUrl: required("ARC_RPC_URL"),
-    usdc: required("ARC_USDC_ADDRESS") as `0x${string}`,
+    rpcUrl: env("ARC_RPC_URL", "https://rpc.testnet.arc.network"),
+    explorer: "https://explorer.testnet.arc.network",
+    nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 6 },
   };
 }
 
-/** Identity. ENSv2 subnames are minted here. */
+// ─── Sepolia: identity ──────────────────────────────────────────────────────
+export const SEPOLIA_CHAIN_ID = 11155111;
+
 export function sepolia(): ChainConfig {
   return {
-    id: 11155111,
+    id: SEPOLIA_CHAIN_ID,
     name: "Sepolia",
-    rpcUrl: required("SEPOLIA_RPC_URL"),
+    rpcUrl: env("SEPOLIA_RPC_URL"),
+    explorer: "https://sepolia.etherscan.io",
+    nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 },
   };
 }
 
-/** Metering and tokenised claims. Hedera testnet's EVM chain ID is 296. */
+// ─── Hedera: metering ───────────────────────────────────────────────────────
 export const HEDERA_TESTNET_CHAIN_ID = 296;
+
+export function hederaTestnet(): ChainConfig {
+  return {
+    id: HEDERA_TESTNET_CHAIN_ID,
+    name: "Hedera Testnet",
+    rpcUrl: env("HEDERA_RPC_URL", "https://testnet.hashio.io/api"),
+    explorer: "https://hashscan.io/testnet",
+    nativeCurrency: { name: "HBAR", symbol: "HBAR", decimals: 18 },
+  };
+}
