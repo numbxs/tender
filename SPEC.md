@@ -248,11 +248,20 @@ Highest dollars-per-hour on the board — skip only if Tier 1 is still unfinishe
 
 ## 11. Open questions
 
-- [ ] **Arc testnet chain ID + USDC address** — not yet verified. Env-driven until confirmed.
+- [x] ~~Arc testnet chain ID + USDC address~~ — **verified day 0** against the live RPC.
+      Chain `5042002`, RPC `https://rpc.testnet.arc.network`. USDC is the **native gas
+      token** at precompile `0x3600…0000`, which answers ERC-20 *reads* but carries no
+      bytecode selectors — calls are intercepted natively. `approve()`/`transferFrom()`
+      therefore cannot be assumed to behave like a normal token, so `WorkEscrow` settles
+      in **native value** and never calls the precompile. Funding a milestone is one
+      transaction instead of two, which is a Privy scoring point.
+- [ ] **Does `approve()` actually work on the precompile?** We do not depend on it, but
+      we should know. One transaction answers it once a deployer is funded (Day 1, A4).
 - [ ] **Arc mainnet track** requires deployment-readiness by **30 September**, two weeks after
       judging. Only enter if we intend to keep shipping past the event.
-- [ ] **Bazantic docs maturity** — first-time sponsor, minimal public footprint. Budget a
-      buffer, and register the account on day 1 (username is a submission requirement).
+- [x] ~~Register Bazantic~~ — done. The **username still has to
+      appear in the submission**. Docs maturity remains unknown: it is a first-time
+      sponsor with a thin public footprint, so it is front-loaded to day 1 (C1).
 - [ ] **Ledger Agent Stack** — confirm whether a physical device is required for the demo or
       whether the emulator suffices.
 
