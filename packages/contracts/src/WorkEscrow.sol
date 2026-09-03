@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "./IERC20.sol";
 import {AgreementRegistry} from "./AgreementRegistry.sol";
 
 /// @title WorkEscrow
 /// @notice USDC escrow for milestone-based work agreements, settling on Arc. See SPEC.md §3.
+///
+/// @dev On Arc, USDC IS the native gas token (precompile 0x3600...0000), so escrow holds
+///      native value rather than an ERC-20 balance. This is deliberate and load-bearing:
+///      there is no approve() step, so funding a milestone is ONE transaction instead of two.
+///      That directly serves the Privy submission -- the fewer transactions a freelancer sees,
+///      the closer we get to "the wallet disappears".
+///
+///      Porting to a chain where USDC is a normal ERC-20 means changing exactly two lines:
+///      the msg.value check in fundMilestone, and the call{value:} in approveRelease.
 ///
 /// @dev The release flow is deliberately two-step: an agent *proposes* a release, and the
 ///      client *approves* it. `approveRelease` is the call a Ledger signer signs -- the agent
@@ -43,7 +51,6 @@ contract WorkEscrow {
         bytes32 termsHash;
     }
 
-    IERC20 public immutable usdc;
     AgreementRegistry public immutable registry;
 
     mapping(bytes32 agreementId => Agreement) public agreements;
@@ -71,9 +78,9 @@ contract WorkEscrow {
     error IndexOutOfRange();
     error TransferFailed();
     error EmptyMilestones();
+    error WrongValue();
 
-    constructor(IERC20 usdc_, AgreementRegistry registry_) {
-        usdc = usdc_;
+    constructor(AgreementRegistry registry_) {
         registry = registry_;
     }
 
@@ -107,18 +114,18 @@ contract WorkEscrow {
         emit AgreementCreated(agreementId, msg.sender, freelancer);
     }
 
-    /// @notice Client deposits USDC for a milestone. Not gated -- funding your own escrow is
-    ///         not a consequential action (SPEC §6).
-    function fundMilestone(bytes32 agreementId, uint32 index) external {
+    /// @notice Client deposits USDC for a milestone by sending native value. Not gated --
+    ///         funding your own escrow is not a consequential action (SPEC §6).
+    function fundMilestone(bytes32 agreementId, uint32 index) external payable {
         Agreement storage a = _mustExist(agreementId);
         if (msg.sender != a.client) revert NotClient();
         if (index >= a.milestoneCount) revert IndexOutOfRange();
 
         Milestone storage m = milestones[agreementId][index];
         if (m.funded) revert AlreadyFunded();
+        if (msg.value != m.amount) revert WrongValue();
         m.funded = true;
 
-        if (!usdc.transferFrom(msg.sender, address(this), m.amount)) revert TransferFailed();
         emit MilestoneFunded(agreementId, index, m.amount);
     }
 
@@ -167,7 +174,10 @@ contract WorkEscrow {
         a.releasedCount += 1;
         a.state = a.releasedCount == a.milestoneCount ? State.Completed : State.Active;
 
-        if (!usdc.transfer(a.freelancer, m.amount)) revert TransferFailed();
+        // State is fully settled above before the external call (checks-effects-interactions).
+        (bool ok,) = payable(a.freelancer).call{value: m.amount}("");
+        if (!ok) revert TransferFailed();
+
         emit ReleaseApproved(agreementId, index, m.amount);
     }
 

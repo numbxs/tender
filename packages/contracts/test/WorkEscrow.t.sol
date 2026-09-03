@@ -4,10 +4,10 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {WorkEscrow} from "../src/WorkEscrow.sol";
 import {AgreementRegistry} from "../src/AgreementRegistry.sol";
-import {MockUSDC} from "./MockUSDC.sol";
 
+/// @dev On Arc, USDC is the native gas token, so escrow balances are native balances
+///      and `deal` / `{value:}` stand in for token transfers.
 contract WorkEscrowTest is Test {
-    MockUSDC usdc;
     AgreementRegistry registry;
     WorkEscrow escrow;
 
@@ -20,13 +20,10 @@ contract WorkEscrowTest is Test {
     bytes32 constant TERMS = keccak256("private terms");
 
     function setUp() public {
-        usdc = new MockUSDC();
         registry = new AgreementRegistry(attestor);
-        escrow = new WorkEscrow(usdc, registry);
+        escrow = new WorkEscrow(registry);
 
-        usdc.mint(client, 1_000e6);
-        vm.prank(client);
-        usdc.approve(address(escrow), type(uint256).max);
+        vm.deal(client, 1_000e6);
     }
 
     function _attest() internal {
@@ -55,8 +52,8 @@ contract WorkEscrowTest is Test {
         _create(100e6);
 
         vm.prank(client);
-        escrow.fundMilestone(ID, 0);
-        assertEq(usdc.balanceOf(address(escrow)), 100e6);
+        escrow.fundMilestone{value: 100e6}(ID, 0);
+        assertEq(address(escrow).balance, 100e6);
 
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
@@ -67,8 +64,8 @@ contract WorkEscrowTest is Test {
         vm.prank(client);
         escrow.approveRelease(ID);
 
-        assertEq(usdc.balanceOf(freelancer), 100e6);
-        assertEq(usdc.balanceOf(address(escrow)), 0);
+        assertEq(freelancer.balance, 100e6);
+        assertEq(address(escrow).balance, 0);
 
         (,,, WorkEscrow.State state,,,) = escrow.agreements(ID);
         assertEq(uint8(state), uint8(WorkEscrow.State.Completed));
@@ -80,7 +77,7 @@ contract WorkEscrowTest is Test {
         _create(100e6);
 
         vm.prank(client);
-        escrow.fundMilestone(ID, 0);
+        escrow.fundMilestone{value: 100e6}(ID, 0);
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
         vm.prank(agent);
@@ -90,7 +87,7 @@ contract WorkEscrowTest is Test {
         vm.expectRevert(WorkEscrow.NotClient.selector);
         escrow.approveRelease(ID);
 
-        assertEq(usdc.balanceOf(freelancer), 0);
+        assertEq(freelancer.balance, 0);
     }
 
     function test_cannotApproveWithoutProposal() public {
@@ -98,13 +95,23 @@ contract WorkEscrowTest is Test {
         _create(100e6);
 
         vm.prank(client);
-        escrow.fundMilestone(ID, 0);
+        escrow.fundMilestone{value: 100e6}(ID, 0);
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
 
         vm.prank(client);
         vm.expectRevert(WorkEscrow.WrongState.selector);
         escrow.approveRelease(ID);
+    }
+
+    /// Native settlement means the value sent must match the milestone exactly.
+    function test_fundMilestone_rejectsWrongValue() public {
+        _attest();
+        _create(100e6);
+
+        vm.prank(client);
+        vm.expectRevert(WorkEscrow.WrongValue.selector);
+        escrow.fundMilestone{value: 99e6}(ID, 0);
     }
 
     function test_onlyAttestorCanAttest() public {
@@ -129,7 +136,7 @@ contract WorkEscrowTest is Test {
         escrow.createAgreement(ID, freelancer, agent, amounts, TERMS);
 
         vm.prank(client);
-        escrow.fundMilestone(ID, 0);
+        escrow.fundMilestone{value: 40e6}(ID, 0);
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
         vm.prank(agent);
@@ -139,6 +146,6 @@ contract WorkEscrowTest is Test {
 
         (,,, WorkEscrow.State state,,,) = escrow.agreements(ID);
         assertEq(uint8(state), uint8(WorkEscrow.State.Active));
-        assertEq(usdc.balanceOf(freelancer), 40e6);
+        assertEq(freelancer.balance, 40e6);
     }
 }
