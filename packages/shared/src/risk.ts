@@ -14,7 +14,7 @@
  * lowest rung of World's ladder. Treat it as a signal, never as an identity.
  */
 
-import { ASSURANCE_RANK, type AssuranceLevel } from "./domain.js";
+import { ASSURANCE_RANK, type AssuranceLevel } from "./domain";
 
 /** What the user must clear before an action proceeds. */
 export type GateRequirement =

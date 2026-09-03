@@ -1,3 +1,3 @@
-export * from "./domain.js";
-export * from "./risk.js";
-export * from "./chains.js";
+export * from "./domain";
+export * from "./risk";
+export * from "./chains";
