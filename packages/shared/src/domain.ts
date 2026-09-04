@@ -98,6 +98,30 @@ export interface Agreement {
   createdAt: Date;
 }
 
+/**
+ * Arc native wei per USDC base unit.
+ *
+ * Arc keeps two representations of the same balance, verified against the live
+ * chain (ratio measured as exactly 1e12):
+ *   - native value  — msg.value, address.balance — 18 decimals
+ *   - USDC precompile view — balanceOf/decimals   —  6 decimals
+ *
+ * Domain amounts are always 6dp USDC base units. Cross into native value only
+ * through `toNativeWei`, and never send a 6dp figure as msg.value: a 100 USDC
+ * milestone funded with the unscaled number is 1e-10 USDC of dust.
+ */
+export const NATIVE_PER_USDC = 1_000_000_000_000n;
+
+/** USDC base units (6dp) -> Arc native wei (18dp). */
+export function toNativeWei(usdcBaseUnits: bigint): bigint {
+  return usdcBaseUnits * NATIVE_PER_USDC;
+}
+
+/** Arc native wei (18dp) -> USDC base units (6dp). Truncates sub-unit dust. */
+export function fromNativeWei(wei: bigint): bigint {
+  return wei / NATIVE_PER_USDC;
+}
+
 export function formatUsdc(base: bigint): string {
   const unit = 10n ** BigInt(USDC_DECIMALS);
   const whole = base / unit;

@@ -12,6 +12,14 @@ import {AgreementRegistry} from "./AgreementRegistry.sol";
 ///      That directly serves the Privy submission -- the fewer transactions a freelancer sees,
 ///      the closer we get to "the wallet disappears".
 ///
+///      DECIMALS. Arc keeps two representations of the same balance and they differ by
+///      1e12, verified against the live chain:
+///        - native value (msg.value, address.balance) is 18-decimal wei
+///        - the USDC precompile's balanceOf/decimals view is 6-decimal
+///      Milestone amounts are stored in USDC base units (6dp) to match the domain model,
+///      so every crossing into native value multiplies by NATIVE_PER_USDC. Getting this
+///      wrong lets a 100 USDC milestone be settled with 1e-10 USDC of dust.
+///
 ///      Porting to a chain where USDC is a normal ERC-20 means changing exactly two lines:
 ///      the msg.value check in fundMilestone, and the call{value:} in approveRelease.
 ///
@@ -50,6 +58,9 @@ contract WorkEscrow {
         uint32 releasedCount;
         bytes32 termsHash;
     }
+
+    /// @notice Native wei per USDC base unit on Arc: 18-decimal native, 6-decimal USDC view.
+    uint256 public constant NATIVE_PER_USDC = 1e12;
 
     AgreementRegistry public immutable registry;
 
@@ -123,7 +134,7 @@ contract WorkEscrow {
 
         Milestone storage m = milestones[agreementId][index];
         if (m.funded) revert AlreadyFunded();
-        if (msg.value != m.amount) revert WrongValue();
+        if (msg.value != nativeAmount(m.amount)) revert WrongValue();
         m.funded = true;
 
         emit MilestoneFunded(agreementId, index, m.amount);
@@ -175,7 +186,7 @@ contract WorkEscrow {
         a.state = a.releasedCount == a.milestoneCount ? State.Completed : State.Active;
 
         // State is fully settled above before the external call (checks-effects-interactions).
-        (bool ok,) = payable(a.freelancer).call{value: m.amount}("");
+        (bool ok,) = payable(a.freelancer).call{value: nativeAmount(m.amount)}("");
         if (!ok) revert TransferFailed();
 
         emit ReleaseApproved(agreementId, index, m.amount);
@@ -189,6 +200,11 @@ contract WorkEscrow {
 
         a.state = State.Disputed;
         emit DisputeRaised(agreementId, msg.sender);
+    }
+
+    /// @notice Convert USDC base units (6dp) to Arc native wei (18dp).
+    function nativeAmount(uint128 usdcBaseUnits) public pure returns (uint256) {
+        return uint256(usdcBaseUnits) * NATIVE_PER_USDC;
     }
 
     function _mustExist(bytes32 agreementId) private view returns (Agreement storage a) {

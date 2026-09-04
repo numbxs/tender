@@ -23,7 +23,7 @@ contract WorkEscrowTest is Test {
         registry = new AgreementRegistry(attestor);
         escrow = new WorkEscrow(registry);
 
-        vm.deal(client, 1_000e6);
+        vm.deal(client, 1_000e6 * 1e12);
     }
 
     function _attest() internal {
@@ -52,8 +52,8 @@ contract WorkEscrowTest is Test {
         _create(100e6);
 
         vm.prank(client);
-        escrow.fundMilestone{value: 100e6}(ID, 0);
-        assertEq(address(escrow).balance, 100e6);
+        escrow.fundMilestone{value: 100e6 * 1e12}(ID, 0);
+        assertEq(address(escrow).balance, 100e6 * 1e12);
 
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
@@ -64,7 +64,7 @@ contract WorkEscrowTest is Test {
         vm.prank(client);
         escrow.approveRelease(ID);
 
-        assertEq(freelancer.balance, 100e6);
+        assertEq(freelancer.balance, 100e6 * 1e12);
         assertEq(address(escrow).balance, 0);
 
         (,,, WorkEscrow.State state,,,) = escrow.agreements(ID);
@@ -77,7 +77,7 @@ contract WorkEscrowTest is Test {
         _create(100e6);
 
         vm.prank(client);
-        escrow.fundMilestone{value: 100e6}(ID, 0);
+        escrow.fundMilestone{value: 100e6 * 1e12}(ID, 0);
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
         vm.prank(agent);
@@ -95,7 +95,7 @@ contract WorkEscrowTest is Test {
         _create(100e6);
 
         vm.prank(client);
-        escrow.fundMilestone{value: 100e6}(ID, 0);
+        escrow.fundMilestone{value: 100e6 * 1e12}(ID, 0);
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
 
@@ -111,7 +111,24 @@ contract WorkEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(WorkEscrow.WrongValue.selector);
-        escrow.fundMilestone{value: 99e6}(ID, 0);
+        escrow.fundMilestone{value: 99e6 * 1e12}(ID, 0);
+    }
+
+    /// Arc keeps native value at 18dp and the USDC view at 6dp; they differ by exactly
+    /// 1e12. If this ever changes, escrow would settle milestones with dust.
+    function test_nativeAmount_scalesBy1e12() public view {
+        assertEq(escrow.nativeAmount(100e6), 100e6 * 1e12);
+        assertEq(escrow.NATIVE_PER_USDC(), 1e12);
+    }
+
+    /// Sending the raw 6dp figure instead of the scaled value must be rejected.
+    function test_fundMilestone_rejectsUnscaledAmount() public {
+        _attest();
+        _create(100e6);
+
+        vm.prank(client);
+        vm.expectRevert(WorkEscrow.WrongValue.selector);
+        escrow.fundMilestone{value: 100e6}(ID, 0);
     }
 
     function test_onlyAttestorCanAttest() public {
@@ -136,7 +153,7 @@ contract WorkEscrowTest is Test {
         escrow.createAgreement(ID, freelancer, agent, amounts, TERMS);
 
         vm.prank(client);
-        escrow.fundMilestone{value: 40e6}(ID, 0);
+        escrow.fundMilestone{value: 40e6 * 1e12}(ID, 0);
         vm.prank(freelancer);
         escrow.submitMilestone(ID, 0);
         vm.prank(agent);
@@ -146,6 +163,6 @@ contract WorkEscrowTest is Test {
 
         (,,, WorkEscrow.State state,,,) = escrow.agreements(ID);
         assertEq(uint8(state), uint8(WorkEscrow.State.Active));
-        assertEq(freelancer.balance, 40e6);
+        assertEq(freelancer.balance, 40e6 * 1e12);
     }
 }

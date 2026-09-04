@@ -255,6 +255,12 @@ Highest dollars-per-hour on the board — skip only if Tier 1 is still unfinishe
       therefore cannot be assumed to behave like a normal token, so `WorkEscrow` settles
       in **native value** and never calls the precompile. Funding a milestone is one
       transaction instead of two, which is a Privy scoring point.
+- [x] ~~Native token decimals~~ — **verified day 1.** Arc carries the same balance in two
+      representations that differ by exactly `1e12`: native value (`msg.value`,
+      `address.balance`) is **18dp**, while the USDC precompile's `balanceOf`/`decimals`
+      view is **6dp**. Domain amounts stay 6dp; `WorkEscrow.nativeAmount()` and
+      `toNativeWei()` in `@tender/shared` are the only sanctioned crossings. Funding a
+      100 USDC milestone with the unscaled figure would settle it for 1e-10 USDC.
 - [ ] **Does `approve()` actually work on the precompile?** We do not depend on it, but
       we should know. One transaction answers it once a deployer is funded (Day 1, A4).
 - [ ] **Arc mainnet track** requires deployment-readiness by **30 September**, two weeks after
