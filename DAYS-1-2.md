@@ -31,14 +31,14 @@ funding one transaction instead of two, which is a Privy scoring point.
 
 Owns Arc and Hedera. Nothing here depends on B or C.
 
-- [ ] **A1 · Fund a deployer.** Get Arc testnet USDC from the faucet. On Arc, USDC is
+- [x] **A1 · Fund a deployer.** ✅ 20 USDC Get Arc testnet USDC from the faucet. On Arc, USDC is
       gas *and* value — the same balance pays for both, so fund generously.
       `cast balance $ADDR --rpc-url https://rpc.testnet.arc.network`
-- [ ] **A2 · Deploy.** `forge script script/Deploy.s.sol --rpc-url $ARC_RPC_URL --private-key $ARC_DEPLOYER_PRIVATE_KEY --broadcast`
+- [x] **A2 · Deploy.** ✅ registry `0xc6488C…5557`, escrow `0x441870…087a` `forge script script/Deploy.s.sol --rpc-url $ARC_RPC_URL --private-key $ARC_DEPLOYER_PRIVATE_KEY --broadcast`
       Put the two addresses in `.env.local` and commit them to `.env.example` as comments.
-- [ ] **A3 · Prove the full cycle on-chain**, not just in Foundry: attest → create →
+- [x] **A3 · Prove the full cycle on-chain** ✅ 6 txs, 1.000000 USDC settled, not just in Foundry: attest → create →
       fund → submit → propose → approve. Capture the tx hashes — this is demo footage.
-- [ ] **A4 · Verify `approve()` empirically** now that you have funds. Send one
+- [x] **A4 · Verify `approve()` empirically** ✅ it works; keeping native anyway now that you have funds. Send one
       `approve` to the precompile and see whether it reverts. Record the answer in
       `SPEC §11` either way. *We do not depend on it — but we should know.*
 - [ ] **A5 · Hedera testnet account** + confirm the JSON-RPC relay reaches it. Metering

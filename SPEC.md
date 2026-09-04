@@ -261,13 +261,19 @@ Highest dollars-per-hour on the board — skip only if Tier 1 is still unfinishe
       view is **6dp**. Domain amounts stay 6dp; `WorkEscrow.nativeAmount()` and
       `toNativeWei()` in `@tender/shared` are the only sanctioned crossings. Funding a
       100 USDC milestone with the unscaled figure would settle it for 1e-10 USDC.
-- [ ] **Does `approve()` actually work on the precompile?** We do not depend on it, but
-      we should know. One transaction answers it once a deployer is funded (Day 1, A4).
+- [x] ~~Does `approve()` work on the precompile?~~ — **yes**, verified day 1: the tx
+      succeeds and `allowance` updates, in 6dp units. We keep native-value settlement
+      anyway, for two reasons that still hold: funding stays one transaction instead of
+      two, and mixing 6dp allowances with 18dp native value is exactly the confusion that
+      produced the dust bug.
 - [ ] **Arc mainnet track** requires deployment-readiness by **30 September**, two weeks after
       judging. Only enter if we intend to keep shipping past the event.
 - [x] ~~Register Bazantic~~ — done. The **username still has to
       appear in the submission**. Docs maturity remains unknown: it is a first-time
       sponsor with a thin public footprint, so it is front-loaded to day 1 (C1).
+- [ ] **Registry attestor is immutable.** Set at construction, and `WorkEscrow` binds the
+      registry at construction too — so pointing at the CRE workflow's signer on day 9
+      means **redeploying both**. Expect it rather than discovering it.
 - [ ] **Ledger Agent Stack** — confirm whether a physical device is required for the demo or
       whether the emulator suffices.
 

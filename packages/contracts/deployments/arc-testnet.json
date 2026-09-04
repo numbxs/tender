@@ -1,0 +1,31 @@
+{
+  "network": "arc-testnet",
+  "chainId": 5042002,
+  "rpcUrl": "https://rpc.testnet.arc.network",
+  "deployedAt": "2026-09-04",
+  "contracts": {
+    "AgreementRegistry": "0xc6488C3f98d4000CcB361515F0461Cf37bF85557",
+    "WorkEscrow": "0x44187091D6a074fD7639b8c56F4A18595ab7087a"
+  },
+  "notes": {
+    "attestor": "Currently the deployer, so the flow works before the CRE workflow exists. AgreementRegistry.attestor is IMMUTABLE -- switching to the workflow signer on day 9 requires REDEPLOYING both contracts, since WorkEscrow binds the registry at construction too.",
+    "decimals": "Native value is 18dp; the USDC precompile view is 6dp. Ratio is exactly 1e12. WorkEscrow.nativeAmount() is the only crossing."
+  },
+  "provenLifecycle": {
+    "agreementId": "0xd45b8d38e835ab5f8d74180a8258a21561d8e740c02f9c4e9dc8b143f17ab9da",
+    "attest": "0x7500755a36052398b4bde0d79b7cc9f7b57aa5a50ffb377801856c6c49a1d6ac",
+    "createAgreement": "0x73d36ba5828027a834496cca239e631a44aea35466dcc13d69f3127cac49eb09",
+    "fundMilestone": "0x18f9ddd35192c79f38b465518d129a25f7f173741a8be05e611288c8477cd716",
+    "submitMilestone": "0xda3a6ed80d9138eadc4ed581578ab6aa29493c21b8672038ae525b01de2f76b0",
+    "proposeRelease": "0x8391f442f53533c59600d2eb8d4cb4c528e3ef4dfe2ee89e805e626e853ed930",
+    "approveRelease": "0x21660357eee9503432c7973ac39f41247b8e5b8b9d7253a1f88aaf6ee25a4ec8",
+    "result": "freelancer received exactly 1.000000 USDC; agreement state = 4 (Completed)"
+  },
+  "provenLedgerGuarantee": {
+    "agreementId": "0x4cedc65835403cc868f39f8a5e498900db200440d1b06b5f0ec5cc82f5c965b3",
+    "description": "Agreement left in ReleasePending after the agent proposed. Both the agent and the freelancer were rejected when calling approveRelease; only the client succeeded.",
+    "agentRejectedWith": "0x20dbc874 (NotClient)",
+    "freelancerRejectedWith": "0x20dbc874 (NotClient)",
+    "clientSucceeded": "freelancer delta 1.000000 USDC"
+  }
+}
