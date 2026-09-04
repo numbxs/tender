@@ -137,6 +137,46 @@ contract WorkEscrowTest is Test {
         registry.attest(ID, TERMS, client, freelancer);
     }
 
+    function test_setAttestor_rotatesAndEmits() public {
+        address next = address(0xBEEF);
+        vm.expectEmit(true, true, false, false);
+        emit AgreementRegistry.AttestorChanged(attestor, next);
+        registry.setAttestor(next);
+        assertEq(registry.attestor(), next);
+
+        // The old attestor loses the right immediately.
+        vm.prank(attestor);
+        vm.expectRevert(AgreementRegistry.NotAttestor.selector);
+        registry.attest(ID, TERMS, client, freelancer);
+
+        vm.prank(next);
+        registry.attest(ID, TERMS, client, freelancer);
+        assertTrue(registry.isAttested(ID));
+    }
+
+    function test_setAttestor_onlyOwner() public {
+        vm.prank(client);
+        vm.expectRevert(AgreementRegistry.NotOwner.selector);
+        registry.setAttestor(address(0xBEEF));
+    }
+
+    function test_setAttestor_rejectsZero() public {
+        vm.expectRevert(AgreementRegistry.ZeroAddress.selector);
+        registry.setAttestor(address(0));
+    }
+
+    /// Rotating the attestor must not let anyone rewrite terms already recorded.
+    function test_rotationCannotRewriteExistingAttestation() public {
+        _attest();
+        registry.setAttestor(address(0xBEEF));
+
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(AgreementRegistry.AlreadyAttested.selector);
+        registry.attest(ID, keccak256("rewritten"), client, freelancer);
+
+        assertEq(registry.attestationOf(ID).termsHash, TERMS);
+    }
+
     function test_attestationIsIdempotentOnce() public {
         _attest();
         vm.prank(attestor);

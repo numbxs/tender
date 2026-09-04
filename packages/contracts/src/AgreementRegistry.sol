@@ -17,8 +17,22 @@ contract AgreementRegistry {
         uint64 attestedAt;
     }
 
-    /// @notice The CRE TEE handler permitted to attest. Set once at deploy.
-    address public immutable attestor;
+    /// @notice Owner, permitted to rotate the attestor. Immutable: nothing in the
+    ///         hackathon scope needs to transfer it, and immutability removes a
+    ///         takeover path.
+    address public immutable owner;
+
+    /// @notice The CRE TEE handler permitted to attest.
+    /// @dev Settable, deliberately. The workflow's signing address does not exist until
+    ///      the CRE workflow is built, and WorkEscrow binds this registry at construction
+    ///      -- so a fixed attestor would force redeploying BOTH contracts to switch over.
+    ///      Rotating here instead keeps every deployed address stable.
+    ///
+    ///      The tradeoff is explicit: the owner can change who is trusted to attest.
+    ///      Attestations already recorded are NOT invalidated by a rotation -- they were
+    ///      valid when made, and `attest` is single-shot per agreement, so a new attestor
+    ///      cannot rewrite terms an old one recorded.
+    address public attestor;
 
     mapping(bytes32 agreementId => Attestation) private _attestations;
 
@@ -26,7 +40,11 @@ contract AgreementRegistry {
         bytes32 indexed agreementId, bytes32 indexed termsHash, address indexed client, address freelancer
     );
 
+    event AttestorChanged(address indexed previous, address indexed next);
+
     error NotAttestor();
+    error NotOwner();
+    error ZeroAddress();
     error AlreadyAttested();
     error NotAttested();
 
@@ -36,7 +54,21 @@ contract AgreementRegistry {
     }
 
     constructor(address attestor_) {
+        if (attestor_ == address(0)) revert ZeroAddress();
+        owner = msg.sender;
         attestor = attestor_;
+        emit AttestorChanged(address(0), attestor_);
+    }
+
+    /// @notice Point the registry at a new attestor -- in practice the CRE workflow's
+    ///         signer, once that workflow exists.
+    function setAttestor(address next) external {
+        if (msg.sender != owner) revert NotOwner();
+        if (next == address(0)) revert ZeroAddress();
+
+        address previous = attestor;
+        attestor = next;
+        emit AttestorChanged(previous, next);
     }
 
     /// @notice Record that the enclave saw both parties agree to `termsHash`.

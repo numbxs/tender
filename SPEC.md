@@ -271,9 +271,9 @@ Highest dollars-per-hour on the board — skip only if Tier 1 is still unfinishe
 - [x] ~~Register Bazantic~~ — done. The **username still has to
       appear in the submission**. Docs maturity remains unknown: it is a first-time
       sponsor with a thin public footprint, so it is front-loaded to day 1 (C1).
-- [ ] **Registry attestor is immutable.** Set at construction, and `WorkEscrow` binds the
-      registry at construction too — so pointing at the CRE workflow's signer on day 9
-      means **redeploying both**. Expect it rather than discovering it.
+- [x] ~~Registry attestor is immutable~~ — **fixed day 1.** `setAttestor()` is now
+      owner-gated, so day 9 rotates to the CRE workflow's signer with one transaction and
+      no redeploy. Deployed addresses are stable for the rest of the hackathon.
 - [ ] **Ledger Agent Stack** — confirm whether a physical device is required for the demo or
       whether the emulator suffices.
 
