@@ -2,15 +2,18 @@
   "name": "tender",
   "private": true,
   "packageManager": "pnpm@10.20.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "web": "pnpm --filter @tender/web dev",
+    "web": "pnpm setup:env && pnpm --filter @tender/web dev",
     "gateway": "pnpm --filter @tender/gateway dev",
     "agent": "pnpm --filter @tender/agent dev",
     "typecheck": "pnpm -r --if-present typecheck",
     "build": "pnpm -r --if-present build",
     "contracts:build": "cd packages/contracts && forge build",
-    "contracts:test": "cd packages/contracts && forge test -vv"
+    "contracts:test": "cd packages/contracts && forge test -vv",
+    "setup:env": "ln -sf ../../.env.local apps/web/.env.local && echo 'linked apps/web/.env.local -> root .env.local'"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

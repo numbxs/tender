@@ -18,6 +18,11 @@ cp .env.example .env.local     # fill in as you go; nothing is required to boot 
 pnpm web                       # http://localhost:3000
 ```
 
+`pnpm web` symlinks `apps/web/.env.local` to the root `.env.local` first. Next only
+reads env from its own project directory, so without that link every `NEXT_PUBLIC_*`
+var is silently ignored — including the Privy app id. Run `pnpm setup:env` if you
+start Next some other way.
+
 Contracts (needs [Foundry](https://getfoundry.sh)):
 
 ```bash

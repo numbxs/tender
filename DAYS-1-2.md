@@ -41,7 +41,7 @@ Owns Arc and Hedera. Nothing here depends on B or C.
 - [x] **A4 · Verify `approve()` empirically** ✅ it works; keeping native anyway now that you have funds. Send one
       `approve` to the precompile and see whether it reverts. Record the answer in
       `SPEC §11` either way. *We do not depend on it — but we should know.*
-- [ ] **A5 · Hedera testnet account** + confirm the JSON-RPC relay reaches it. Metering
+- [x] **A5 · Hedera testnet account** ✅ funded 100 HBAR, Hashio relay live (chain 296) + confirm the JSON-RPC relay reaches it. Metering
       lands on Hedera (day 7), so having the account on day 2 removes a day-7 surprise.
 
 **Done when:** a stranger can read the tx hashes and watch USDC move through escrow.
@@ -52,7 +52,7 @@ Owns Arc and Hedera. Nothing here depends on B or C.
 
 Owns Privy, ENS, World. Owns the demo, because Privy is judged on polish.
 
-- [ ] **B1 · Privy app.** Register Arc as a custom chain — Privy will not know
+- [~] **B1 · Privy app.** Provider + Arc custom chain wired; needs NEXT_PUBLIC_PRIVY_APP_ID Register Arc as a custom chain — Privy will not know
       `5042002`. Chain config is in `packages/shared/src/chains.ts`; use `arc()`.
 - [ ] **B2 · Email login → embedded wallet.** `createOnLogin: "users-without-wallets"`.
       The target is a freelancer who never sees a seed phrase.
@@ -60,7 +60,7 @@ Owns Privy, ENS, World. Owns the demo, because Privy is judged on polish.
       escrow — the app is multi-chain from day 1. Get `alice.tender.eth` minting.
 - [ ] **B4 · Write ENS records:** payout chain, assurance level. Records-as-application-data
       is the ENS winning pattern; display names alone do not place.
-- [ ] **B5 · Replace the placeholder page** with a real shell: logged-out, logged-in,
+- [x] **B5 · Replace the placeholder page** ✅ shell with auth, setup notice, live risk table with a real shell: logged-out, logged-in,
       your ENS identity. Keep the risk-policy table somewhere — it is a good demo aid.
 
 **Done when:** someone signs in with an email and ends up holding a subname with records.
