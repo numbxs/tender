@@ -40,8 +40,31 @@ export type Action =
  * Releases at or above this move real money to someone else, so they get the
  * full two-factor gate. Below it, the flow stays frictionless — which is the
  * point: a gate that fires on everything is just a login screen with extra steps.
+ *
+ * Configurable, and it has to be. The production-shaped default is 100 USDC, but
+ * Arc's faucet dispenses 20 USDC per address every 2 hours — so on testnet a
+ * 100 USDC release is unfundable, and the Selfie + Ledger gate would never fire
+ * in a demo. That gate IS the World and Ledger submissions, so set
+ * NEXT_PUBLIC_RELEASE_GATE_THRESHOLD_USDC low (e.g. "1") when recording.
  */
-export const RELEASE_GATE_THRESHOLD_USDC = 100_000_000n; // 100 USDC
+const DEFAULT_RELEASE_GATE_THRESHOLD_USDC = 100_000_000n; // 100 USDC
+
+function resolveThreshold(): bigint {
+  // Referenced in full so Next inlines it at build time.
+  const raw =
+    typeof process === "undefined"
+      ? undefined
+      : process.env.NEXT_PUBLIC_RELEASE_GATE_THRESHOLD_USDC;
+  if (!raw) return DEFAULT_RELEASE_GATE_THRESHOLD_USDC;
+
+  const [whole = "0", frac = ""] = raw.split(".");
+  if (frac.length > 6) {
+    throw new Error(`NEXT_PUBLIC_RELEASE_GATE_THRESHOLD_USDC has too many decimals: "${raw}"`);
+  }
+  return BigInt(whole) * 1_000_000n + BigInt(frac.padEnd(6, "0") || "0");
+}
+
+export const RELEASE_GATE_THRESHOLD_USDC = resolveThreshold();
 
 export interface GateDecision {
   requirement: GateRequirement;
