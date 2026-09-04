@@ -52,9 +52,9 @@ Owns Arc and Hedera. Nothing here depends on B or C.
 
 Owns Privy, ENS, World. Owns the demo, because Privy is judged on polish.
 
-- [~] **B1 · Privy app.** Provider + Arc custom chain wired; needs NEXT_PUBLIC_PRIVY_APP_ID Register Arc as a custom chain — Privy will not know
+- [x] **B1 · Privy app.** ✅ app id set, Arc registered as a custom chain, login modal verified in-browser Register Arc as a custom chain — Privy will not know
       `5042002`. Chain config is in `packages/shared/src/chains.ts`; use `arc()`.
-- [ ] **B2 · Email login → embedded wallet.** `createOnLogin: "users-without-wallets"`.
+- [~] **B2 · Email login → embedded wallet.** UI verified; complete a real login to confirm wallet creation. `createOnLogin: "users-without-wallets"`.
       The target is a freelancer who never sees a seed phrase.
 - [ ] **B3 · ENSv2 subname on Sepolia.** Note this is a *different chain* from the
       escrow — the app is multi-chain from day 1. Get `alice.tender.eth` minting.
