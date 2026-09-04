@@ -56,7 +56,7 @@ Owns Privy, ENS, World. Owns the demo, because Privy is judged on polish.
       `5042002`. Chain config is in `packages/shared/src/chains.ts`; use `arc()`.
 - [~] **B2 · Email login → embedded wallet.** UI verified; complete a real login to confirm wallet creation. `createOnLogin: "users-without-wallets"`.
       The target is a freelancer who never sees a seed phrase.
-- [~] **B3 · ENSv2 subname on Sepolia.** Registration script ready (`pnpm ens:register`); BLOCKED on ~8 USDC on Sepolia, not ETH. Note this is a *different chain* from the
+- [~] **B3 · ENSv2 subname on Sepolia.** ✅ tender.eth registered (expires 2027-09-04). Next: deploy the subname registry and point tender.eth at it. Note this is a *different chain* from the
       escrow — the app is multi-chain from day 1. Get `alice.tender.eth` minting.
 - [ ] **B4 · Write ENS records:** payout chain, assurance level. Records-as-application-data
       is the ENS winning pattern; display names alone do not place.
@@ -76,7 +76,7 @@ are what slip.
       spec and get a Gateway responding. It is a first-time sponsor with thin docs;
       find out on day 1 whether it works, not on day 11.
       **Record the username in `.env.local` — it is a submission requirement.**
-- [ ] **C2 · World developer app + Sandbox access.** Get `NEXT_PUBLIC_WORLD_APP_ID`.
+- [~] **C2 · World developer app.** app_id set, /api/verify built with the nullifier reuse check. Needs WORLD_RP_ID + signing key. Get `NEXT_PUBLIC_WORLD_APP_ID`.
       Read the Selfie Check docs and confirm our reading: it returns a medium-assurance
       *signal*, not an identity.
 - [ ] **C3 · Start `FEEDBACK-world.md` today.** Every rough edge, while you hit it.

@@ -1,0 +1,21 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "parentName": "tender.eth",
+  "owner": "0xBB077b590B904c47DA7c76D41641Bbc8f7a9e9e7",
+  "labelhash": "0x936119c3399a561089a367d028b7b81142c349bb45394edadf7309ee9790f605",
+  "expiry": 1820059632,
+  "expiryHuman": "2027-09-04",
+  "resolver": "0xe7b9a25607e02da8145e4eb1836ca539e53f11f7",
+  "paidWith": {
+    "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    "symbol": "USDC",
+    "amount": "8.000021"
+  },
+  "txs": {
+    "approve": "0xac2e83984971c580e6d45ca801d6e3125d1d1281eb41fe90001e910474463ead",
+    "commit": "0xfffcbeb94858ae4b37c8e18687323a411c44eeeb2e585ed87cf76edf89d1d4f3",
+    "register": "0xe432c5aabe53306badffb74f72fbcb25692c69c0b10967aa8f64ff6e1d0b9e98"
+  },
+  "next": "Deploy a UserRegistry via VerifiableFactory and setSubregistry on tender.eth (B3)."
+}
