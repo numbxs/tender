@@ -56,10 +56,9 @@ Owns Privy, ENS, World. Owns the demo, because Privy is judged on polish.
       `5042002`. Chain config is in `packages/shared/src/chains.ts`; use `arc()`.
 - [~] **B2 · Email login → embedded wallet.** UI verified; complete a real login to confirm wallet creation. `createOnLogin: "users-without-wallets"`.
       The target is a freelancer who never sees a seed phrase.
-- [~] **B3 · ENSv2 subname on Sepolia.** ✅ tender.eth registered (expires 2027-09-04). Next: deploy the subname registry and point tender.eth at it. Note this is a *different chain* from the
+- [x] **B3 · ENSv2 subname on Sepolia.** ✅ tender.eth registered, subname registry deployed and wired, alice.tender.eth minted. Verified via direct reads (getOwner/getCode), not receipt status alone. Note this is a *different chain* from the
       escrow — the app is multi-chain from day 1. Get `alice.tender.eth` minting.
-- [ ] **B4 · Write ENS records:** payout chain, assurance level. Records-as-application-data
-      is the ENS winning pattern; display names alone do not place.
+- [x] **B4 · Write ENS records:** ✅ payout-chain and assurance written on alice.tender.eth via a Tender-owned PermissionedResolver, read back and confirmed correct.
 - [x] **B5 · Replace the placeholder page** ✅ shell with auth, setup notice, live risk table with a real shell: logged-out, logged-in,
       your ENS identity. Keep the risk-policy table somewhere — it is a good demo aid.
 

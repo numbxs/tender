@@ -6,16 +6,47 @@
   "labelhash": "0x936119c3399a561089a367d028b7b81142c349bb45394edadf7309ee9790f605",
   "expiry": 1820059632,
   "expiryHuman": "2027-09-04",
-  "resolver": "0xe7b9a25607e02da8145e4eb1836ca539e53f11f7",
-  "paidWith": {
-    "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-    "symbol": "USDC",
-    "amount": "8.000021"
+  "paidWith": {"token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", "symbol": "USDC", "amount": "8.000021"},
+  "contracts": {
+    "TenderRegistry": {
+      "address": "0x77c8011058E70fE8a4d8A4f1795cf15307681B16",
+      "implementation": "UserRegistryImpl",
+      "note": "Subname registry for tender.eth, deployed via VerifiableFactory. Owner (deployer) holds TENDER_REGISTRY_OWNER_ROLES."
+    },
+    "TenderResolver": {
+      "address": "0xbc5a8f370122Ce4Bb39eB97254CaB8Eb7fef5eC9",
+      "implementation": "PermissionedResolverImpl",
+      "note": "One resolver instance serves tender.eth and every subname beneath it (roles are granted at ROOT_RESOURCE, which is resolver-instance-wide). NOT PublicResolverV2 -- see ens.ts for why."
+    }
+  },
+  "demoSubname": {
+    "name": "alice.tender.eth",
+    "owner": "0xBB077b590B904c47DA7c76D41641Bbc8f7a9e9e7",
+    "node": "0xff2c528a1041080ca90045782c274f38702aecd7e6b692070ffddfd7214c7645",
+    "records": {
+      "tender.payout-chain": "eip155:5042002",
+      "tender.assurance": "none"
+    }
+  },
+  "incident": {
+    "summary": "First setup attempt deployed real, working contracts but pointed every subsequent write at the wrong addresses.",
+    "cause": "VerifiableFactory.ProxyDeployed's `sender` and `proxyAddress` params are indexed (confirmed against on-chain topics). The first script version assumed all four event params were non-indexed and manually sliced `data` by byte offset to extract `proxyAddress`. That slice actually read the `salt` field's tail 20 bytes -- a pseudorandom hash tail that happened to look exactly like a plausible address.",
+    "effect": "setSubregistry, register(\"alice\"), and setText were sent to that address. All returned status:success (a call to an address with no bytecode is a no-op that never reverts), so nothing on the surface indicated failure -- only a direct getCode/getOwner read against the target exposed it.",
+    "fix": "Replaced manual event-data slicing with viem's decodeEventLog against a corrected ABI (indexed: true on sender/proxyAddress). Every write in the corrected script is now followed by an independent read that must match before the script continues -- a receipt's status:success is treated as necessary, not sufficient.",
+    "resolution": "Re-ran end to end. TenderRegistry and TenderResolver above are confirmed via getCode (non-empty) and via getOwner/text reads that match exactly what was written."
   },
   "txs": {
-    "approve": "0xac2e83984971c580e6d45ca801d6e3125d1d1281eb41fe90001e910474463ead",
-    "commit": "0xfffcbeb94858ae4b37c8e18687323a411c44eeeb2e585ed87cf76edf89d1d4f3",
-    "register": "0xe432c5aabe53306badffb74f72fbcb25692c69c0b10967aa8f64ff6e1d0b9e98"
-  },
-  "next": "Deploy a UserRegistry via VerifiableFactory and setSubregistry on tender.eth (B3)."
+    "registerTenderEth": {
+      "approve": "0xac2e83984971c580e6d45ca801d6e3125d1d1281eb41fe90001e910474463ead",
+      "commit": "0xfffcbeb94858ae4b37c8e18687323a411c44eeeb2e585ed87cf76edf89d1d4f3",
+      "register": "0xe432c5aabe53306badffb74f72fbcb25692c69c0b10967aa8f64ff6e1d0b9e98"
+    },
+    "deployTenderRegistry": "0xf5a355da04d15fec90d8fbc9ed975f7220a57c086df8b5e3fa62c3ba4c2547d4",
+    "deployTenderResolver": "0x09e51c4ae6e7f54f1479973f979d6c61c8baf3ee577b812b975def355f170d8e",
+    "setSubregistry": "0x9f11018b2d8147542285320c146c6c73e54b0fecfca951e336c0d1711b0d5c09",
+    "setResolver": "0xeb382b393016800e8ad50624cc8c8970d457c41b45a7f5107e39cf3f1f1a9bdb",
+    "mintAlice": "0x8e6a65fc8d5324abfb58878de71d5c4b09438f92bd1fde42aca8617aeda7913f",
+    "setTextPayoutChain": "0x0a47820dbee7231a84ef7c6d80edd0d390339c76117378538ce4ec31da9f6e89",
+    "setTextAssurance": "0x235c7b662a707baae853675e894e6c4ce5f5d24468323c4b8f5b7721dac753f5"
+  }
 }

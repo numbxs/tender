@@ -14,7 +14,8 @@
     "contracts:build": "cd packages/contracts && forge build",
     "contracts:test": "cd packages/contracts && forge test -vv",
     "setup:env": "ln -sf ../../.env.local apps/web/.env.local && echo 'linked apps/web/.env.local -> root .env.local'",
-    "ens:register": "tsx scripts/ens/register-parent.ts"
+    "ens:register": "tsx scripts/ens/register-parent.ts",
+    "ens:setup": "tsx scripts/ens/setup-subregistry.ts"
   },
   "devDependencies": {
     "dotenv": "^17.4.2",
