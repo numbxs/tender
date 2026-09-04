@@ -81,10 +81,10 @@ are what slip.
       *signal*, not an identity.
 - [ ] **C3 · Start `FEEDBACK-world.md` today.** Every rough edge, while you hit it.
       This document is graded, and it cannot be reconstructed on day 16.
-- [ ] **C4 · x402 spike.** Pick the facilitator, get one real settlement working on
+- [~] **C4 · x402 spike.** @x402/hedera wired, CAIP-2 ids validated at boot. Still needs a facilitator URL for real settlement. Pick the facilitator, get one real settlement working on
       Hedera testnet — even outside our code. `services/gateway/src/x402.ts` has the
       seam; only `verifyPayment` and `settle` change.
-- [ ] **C5 · Write the OpenAPI spec** for the gateway. C1 needs it, and Bazantic
+- [x] **C5 · Write the OpenAPI spec** ✅ services/gateway/openapi.yaml, matches the running service for the gateway. C1 needs it, and Bazantic
       consumes it directly.
 
 **Done when:** Bazantic answers, World's app ID exists, and one real x402 payment settled.

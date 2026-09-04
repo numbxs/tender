@@ -13,16 +13,26 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { meetsAssurance, type AssuranceLevel } from "@tender/shared";
-import { paymentRequired, type PaymentProof, type X402Config } from "./x402";
+import {
+  assertNetwork,
+  paymentRequired,
+  HEDERA_TESTNET,
+  HEDERA_TESTNET_USDC_ASSET,
+  type PaymentProof,
+  type X402Config,
+} from "./x402";
 
 type Vars = { payment: PaymentProof };
 
 const config: X402Config = {
-  network: process.env.X402_NETWORK ?? "hedera-testnet",
+  network: process.env.X402_NETWORK ?? HEDERA_TESTNET,
   payTo: process.env.X402_PAY_TO_ADDRESS ?? "0x0000000000000000000000000000000000000000",
-  asset: process.env.X402_ASSET ?? "USDC",
+  // Hedera assets are token ids, not symbols. Testnet USDC is 0.0.429274 (6dp).
+  asset: process.env.X402_ASSET ?? HEDERA_TESTNET_USDC_ASSET,
   priceUsdc: process.env.X402_BID_PRICE_USDC ?? "0.01",
 };
+
+assertNetwork(config.network);
 
 const app = new Hono<{ Variables: Vars }>();
 

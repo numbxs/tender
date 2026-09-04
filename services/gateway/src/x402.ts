@@ -11,12 +11,39 @@
  *   3. Agent pays and retries with an `X-PAYMENT` header.
  *   4. We verify and settle, then serve the route.
  *
- * TODO(day 7): swap `verifyPayment` for the official x402 facilitator client.
- * The challenge shape below follows the spec so the agent side does not change
- * when we do. Do not ship the stub -- a mocked payment fails the track.
+ * Network ids are CAIP-2. Hedera testnet is `hedera:testnet` -- NOT
+ * `hedera-testnet`, which @x402/hedera rejects outright. `assertNetwork` below
+ * turns that mistake into a boot failure rather than a 402 no facilitator will
+ * ever honour.
+ *
+ * TODO(day 7): swap `verifyPayment` for a real FacilitatorClient and
+ * `paymentMiddleware(routes, server)` from @x402/hono, with
+ * `new x402ResourceServer(facilitator).register(HEDERA_TESTNET_CAIP2, new ExactHederaScheme())`.
+ * The challenge shape below already matches, so the agent side will not change.
+ * Do not ship the stub -- Hedera's track requires a LIVE gated service.
  */
 
+export const HEDERA_TESTNET = HEDERA_TESTNET_CAIP2;
+export const HEDERA_TESTNET_USDC_ASSET = HEDERA_TESTNET_USDC;
+export const USDC_DECIMALS = HEDERA_USDC_DECIMALS;
+
+/** Fail at boot on an unusable network id, instead of serving a dead challenge. */
+export function assertNetwork(network: string): void {
+  if (!isSupportedHederaNetwork(network)) {
+    throw new Error(
+      `Unsupported x402 network "${network}". Hedera ids are CAIP-2, e.g. "${HEDERA_TESTNET_CAIP2}". ` +
+        `Note "hedera-testnet" is NOT valid.`,
+    );
+  }
+}
+
 import type { Context, MiddlewareHandler } from "hono";
+import {
+  HEDERA_TESTNET_CAIP2,
+  HEDERA_TESTNET_USDC,
+  HEDERA_USDC_DECIMALS,
+  isSupportedHederaNetwork,
+} from "@x402/hedera";
 
 export interface PaymentRequirements {
   scheme: "exact";
