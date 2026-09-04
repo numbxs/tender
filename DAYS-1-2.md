@@ -56,7 +56,7 @@ Owns Privy, ENS, World. Owns the demo, because Privy is judged on polish.
       `5042002`. Chain config is in `packages/shared/src/chains.ts`; use `arc()`.
 - [~] **B2 · Email login → embedded wallet.** UI verified; complete a real login to confirm wallet creation. `createOnLogin: "users-without-wallets"`.
       The target is a freelancer who never sees a seed phrase.
-- [ ] **B3 · ENSv2 subname on Sepolia.** Note this is a *different chain* from the
+- [~] **B3 · ENSv2 subname on Sepolia.** Registration script ready (`pnpm ens:register`); BLOCKED on ~8 USDC on Sepolia, not ETH. Note this is a *different chain* from the
       escrow — the app is multi-chain from day 1. Get `alice.tender.eth` minting.
 - [ ] **B4 · Write ENS records:** payout chain, assurance level. Records-as-application-data
       is the ENS winning pattern; display names alone do not place.

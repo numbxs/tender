@@ -13,9 +13,13 @@
     "build": "pnpm -r --if-present build",
     "contracts:build": "cd packages/contracts && forge build",
     "contracts:test": "cd packages/contracts && forge test -vv",
-    "setup:env": "ln -sf ../../.env.local apps/web/.env.local && echo 'linked apps/web/.env.local -> root .env.local'"
+    "setup:env": "ln -sf ../../.env.local apps/web/.env.local && echo 'linked apps/web/.env.local -> root .env.local'",
+    "ens:register": "tsx scripts/ens/register-parent.ts"
   },
   "devDependencies": {
-    "typescript": "^5.7.3"
+    "dotenv": "^17.4.2",
+    "tsx": "^4.23.13",
+    "typescript": "^5.7.3",
+    "viem": "^2.56.3"
   }
 }
