@@ -1,32 +1,48 @@
 {
   "provider": "Bazantic",
-  "registeredAt": "2026-09-04T21:02:39Z",
+  "registeredAt": "2026-09-04T22:32:00Z",
   "gateway": {
-    "id": "9b699650-173c-4a31-a308-22c043d66c9a",
-    "slug": "tnuzmuaxhrfddiyielaehvtmti",
+    "id": "ed115037-974c-4c30-a5fb-e9d4706fa842",
+    "slug": "5uivan4xjrgdbjp35hkha35iii",
     "name": "Tender Bid Gateway",
     "status": "draft",
-    "endpointUrl": "https://tnuzmuaxhrfddiyielaehvtmti.bazgateway.com",
-    "mcpUrl": "https://tnuzmuaxhrfddiyielaehvtmti.bazgateway.com/mcp",
+    "endpointUrl": "https://5uivan4xjrgdbjp35hkha35iii.bazgateway.com",
+    "mcpUrl": "https://5uivan4xjrgdbjp35hkha35iii.bazgateway.com/mcp",
     "authType": "x402-mpp",
     "category": "data"
   },
   "registeredAgainst": {
     "specUrl": "https://raw.githubusercontent.com/numbxs/tender/main/services/gateway/openapi.yaml",
-    "endpoint": "https://7091-104-28-245-42.ngrok-free.app",
-    "endpointKind": "ngrok free-tier tunnel to local services/gateway",
-    "verifiedLiveBeforeRegistering": ["GET /health -> 200", "GET /bids/quote -> 200"]
+    "endpoint": "https://tender-gateway.hamedmiirz.workers.dev",
+    "endpointKind": "Cloudflare Workers -- persistent, no laptop/tunnel process required",
+    "verifiedLiveBeforeRegistering": [
+      "GET /health -> 200",
+      "GET /bids/quote -> 200",
+      "POST /bids (no payment) -> 402 with real challenge",
+      "POST /bids (X-PAYMENT header) -> 201 with a real bid record"
+    ]
+  },
+  "supersedes": {
+    "gatewayId": "9b699650-173c-4a31-a308-22c043d66c9a",
+    "reason": "First registration pointed at a free-tier ngrok tunnel to a local process -- ephemeral by construction. This one points at the real Workers deployment, which stays up without anyone's laptop running. The old draft listing has no CLI delete; leaving it in the dashboard, ignore it."
   },
   "knownGaps": {
-    "endpointIsEphemeral": "The registered --endpoint is an ngrok free-tier URL. It dies when the ngrok process stops, and a fresh `ngrok http 8787` issues a NEW random URL that will NOT match what Bazantic has on file. There is no `baz gateway update` -- the CLI surface is only add/list. Before the actual submission, either (a) deploy services/gateway somewhere persistent (Fly.io, Render, a VPS) and re-register, or (b) get a reserved ngrok subdomain so the URL is stable across restarts.",
     "draftStatus": "Registered as draft, not active. Two things have no CLI equivalent and need the Bazantic dashboard: reviewing/setting real per-method prices (every discovered method starts at a default), and flipping status from draft to active. auth-type x402-mpp needs no credential entry, so that step is already done.",
-    "mcp404WhileDraft": "GET /mcp on the gateway 404s right now. Per Bazantic's own docs this is expected for a draft gateway -- mcp:true in the listing is eligibility, not confirmation a server is deployed and answering. Re-check with tools/list after activation."
+    "mcp404WhileDraft": "GET /mcp on the gateway 404s right now. Per Bazantic's own docs this is expected for a draft gateway -- mcp:true in the listing is eligibility, not confirmation a server is deployed and answering. Re-check with tools/list after activation.",
+    "paymentSettlementStillStubbed": "services/gateway's verifyPayment accepts any non-empty X-PAYMENT header. The 402 challenge itself is real (correct CAIP-2 network, real Hedera testnet USDC asset id, real payTo address); actual settlement verification against a facilitator is still the day-7 TODO in services/gateway/src/x402.ts."
+  },
+  "deployment": {
+    "platform": "Cloudflare Workers",
+    "url": "https://tender-gateway.hamedmiirz.workers.dev",
+    "deployCommand": "cd services/gateway && wrangler deploy",
+    "config": "services/gateway/wrangler.jsonc -- vars block carries X402_NETWORK, X402_ASSET, X402_BID_PRICE_USDC, X402_PAY_TO_ADDRESS",
+    "architectureNote": "services/gateway/src/app.ts exports a plain Hono app with no module-scope env access -- config is resolved per-request from Hono's c.env (Workers) with a process.env fallback (Node). src/index.ts is the Workers entry (`export default app`); src/local.ts is the Node entry (@hono/node-server's serve()). Both run the identical app.",
+    "removedDependency": "@x402/hedera was imported only for four constants (network id, USDC asset id, decimals, a validity check) but its barrel re-exports @hiero-ledger/sdk's full gRPC client, which needs fs/tls/node:path and cannot bundle for Workers. Those four values are now inlined locally with a note to re-verify against @x402/hedera on any version bump; nothing else changed."
   },
   "next": [
-    "Deploy services/gateway to a persistent host, or reserve a stable tunnel domain",
-    "Re-register (or update once the CLI supports it) with the stable endpoint",
-    "Set real per-method prices in the dashboard to match X402_BID_PRICE_USDC",
-    "Activate, then confirm /mcp answers via tools/list",
-    "Create a recipe using this gateway for the 'Best Recipe' track"
+    "Set real per-method prices in the Bazantic dashboard to match X402_BID_PRICE_USDC",
+    "Activate the gateway, then confirm /mcp answers via tools/list",
+    "Create a recipe using this gateway for the 'Best Recipe' track",
+    "Wire real x402 facilitator settlement (day 7 TODO) -- the deployed challenge is real, verification is not yet"
   ]
 }

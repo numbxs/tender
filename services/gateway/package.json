@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "dev": "tsx watch src/local.ts",
+    "start": "tsx src/local.ts",
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "@tender/shared": "workspace:*",
     "@x402/core": "^2.25.0",
-    "@x402/hedera": "^2.25.0",
     "@x402/hono": "^2.25.0",
     "hono": "^4.6.14"
   },

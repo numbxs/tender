@@ -1,0 +1,11 @@
+{
+  "name": "tender-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-01-01",
+  "vars": {
+    "X402_NETWORK": "hedera:testnet",
+    "X402_ASSET": "0.0.429274",
+    "X402_BID_PRICE_USDC": "0.01",
+    "X402_PAY_TO_ADDRESS": "0xe1522585E1e122420a3D64049BB21d4239dF2F52"
+  }
+}

@@ -23,6 +23,24 @@
  * Do not ship the stub -- Hedera's track requires a LIVE gated service.
  */
 
+import type { Context, MiddlewareHandler } from "hono";
+
+/**
+ * These four are copied from @x402/hedera's own exported constants rather
+ * than imported from the package. Importing anything from its barrel pulls
+ * in @hiero-ledger/sdk's full gRPC client (fs, tls, node:path) transitively --
+ * fine in Node, fatal in a Workers bundle, and unnecessary here since this
+ * service never opens a Hedera gRPC connection, only reasons about ids.
+ * Re-verify against @x402/hedera on any version bump.
+ */
+const HEDERA_TESTNET_CAIP2 = "hedera:testnet";
+const HEDERA_TESTNET_USDC = "0.0.429274";
+const HEDERA_USDC_DECIMALS = 6;
+const SUPPORTED_HEDERA_NETWORKS = ["hedera:mainnet", "hedera:testnet"];
+function isSupportedHederaNetwork(network: string): boolean {
+  return SUPPORTED_HEDERA_NETWORKS.includes(network);
+}
+
 export const HEDERA_TESTNET = HEDERA_TESTNET_CAIP2;
 export const HEDERA_TESTNET_USDC_ASSET = HEDERA_TESTNET_USDC;
 export const USDC_DECIMALS = HEDERA_USDC_DECIMALS;
@@ -36,14 +54,6 @@ export function assertNetwork(network: string): void {
     );
   }
 }
-
-import type { Context, MiddlewareHandler } from "hono";
-import {
-  HEDERA_TESTNET_CAIP2,
-  HEDERA_TESTNET_USDC,
-  HEDERA_USDC_DECIMALS,
-  isSupportedHederaNetwork,
-} from "@x402/hedera";
 
 export interface PaymentRequirements {
   scheme: "exact";
@@ -89,9 +99,18 @@ async function verifyPayment(header: string, _config: X402Config): Promise<Payme
   return { reference: trimmed.slice(0, 64), payer: "unknown" };
 }
 
-/** Gate a route behind x402. On success, `c.get("payment")` holds the proof. */
-export function paymentRequired(config: X402Config): MiddlewareHandler {
+/**
+ * Gate a route behind x402. On success, `c.get("payment")` holds the proof.
+ *
+ * Reads config fresh per-request via `resolveConfig`, rather than closing
+ * over a value computed once at module load. Workers has no module-scope
+ * `process.env` -- config only exists inside the request's `c.env` -- so
+ * anything read at import time is a ReferenceError waiting to happen the
+ * moment this runs somewhere other than Node.
+ */
+export function paymentRequired(resolveConfig: (c: Context) => X402Config): MiddlewareHandler {
   return async (c, next) => {
+    const config = resolveConfig(c);
     const header = c.req.header("X-PAYMENT");
 
     if (!header) {
