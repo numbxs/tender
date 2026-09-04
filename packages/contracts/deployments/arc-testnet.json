@@ -2,36 +2,31 @@
   "network": "arc-testnet",
   "chainId": 5042002,
   "rpcUrl": "https://rpc.testnet.arc.network",
-  "deployedAt": "2026-09-04",
+  "deployedAt": "2026-09-05",
   "contracts": {
-    "AgreementRegistry": "0x418334198D6471E68E398F83F10Bad71C3beC56e",
-    "WorkEscrow": "0xB3BCed454ae4fE21bD1565F99B88c93CE346E178"
+    "AgreementRegistry": "0x21302eb2589efD199Be5f29A0c576991F0A4Cc68",
+    "WorkEscrow": "0x965Aea68F10d8Fe1ceb84360BE5b093E9e7199F7"
   },
+  "mechanism": "Option A (Arc + Privy + World). AgreementRegistry no longer has a trusted attestor -- both parties sign an EIP-712 message over (agreementId, termsHash, client, freelancer) themselves, in practice from their Privy embedded wallets, with the UI requiring a World Selfie Check pass immediately before the signature prompt. Anyone can relay both signatures in one attest() transaction; the contract only records the attestation if both recover to the addresses named in it.",
   "notes": {
-    "attestor": "Settable by the owner. Currently the deployer so the flow works before the CRE workflow exists; rotate to the workflow's signer on day 9 with setAttestor(). No redeploy needed -- these addresses are now stable for the rest of the hackathon.",
+    "noAttestor": "AgreementRegistry's constructor takes no argument -- there is nothing to rotate and no oracle to trust. This is a breaking redeploy from the previous CRE-attestor design; the earlier addresses (registry 0x418334..C56e, escrow 0xB3BCed..178) are abandoned.",
     "decimals": "Native value is 18dp; the USDC precompile view is 6dp. Ratio is exactly 1e12. WorkEscrow.nativeAmount() is the only crossing.",
-    "supersedes": "First deployment (registry 0xc6488C..5557, escrow 0x441870..087a) had an immutable attestor and is abandoned."
+    "supersedes": "Two prior deployments: the very first (immutable attestor) and the second (settable attestor -- registry 0x418334..C56e, escrow 0xB3BCed..178), both abandoned when the product direction dropped Chainlink CRE in favor of dual-signature attestation."
+  },
+  "provenSignatureAttestation": {
+    "description": "Two fresh throwaway keys (never seen by any of our own scripts before this run) signed a real EIP-712 digest built from registry.domainSeparator(), and the deployer -- neither signing party -- relayed the attest() transaction. Proves both the signature verification and the permissionless-relay property live, not just in Foundry.",
+    "client": "0xC87C1e29759f1bBc2C793F86496f698e676b0C97",
+    "freelancer": "0x132624124F1ca602B272201f83BDdE2e64673BEb",
+    "agreementId": "0xbbdca3394c30359c8686723d139c2c521e549380ebf84a419ed12c3463a1efa2",
+    "attestTx": "0x96b86367fe23a9c8b00ffdc60461742f296e2b8227f6455c9851e69f4c9d385e",
+    "relayedBy": "the deployer -- not client, not freelancer"
   },
   "provenLifecycle": {
-    "agreementId": "0x3450e310bcab2ff65d400eefab085474cf4fde58239d315ad37b10f989cd96fe",
-    "attest": "0xcd5c0f3c1ebac00309980f574f5d6169808e8e2bc82e76be7ecdbb8d9f1acae1",
-    "createAgreement": "0xe74ad4304e49486390c31bad6ebe2a24830ffe598fa97596bc3b7627912c8940",
-    "fundMilestone": "0xe1d8dc982e271247e7c47462b215f46971bf9820ad985799212ad9e6e80d7fd3",
-    "submitMilestone": "0xf52dc3df4a6c67b9756f32649eeb8306e07ce7d53012e2dfa0ea660a86438ea8",
-    "proposeRelease": "0xea8bbb8b882aec5e8a93b1e22d85dfb264ba097a9366fdce36fadd77b014cfac",
-    "approveRelease": "0x6fff2082549e7036411281ab3f3c1a9ef891a222d1418edc058922afeaabfe2e",
+    "createAgreement": "0xaf083090e85c9563c0a89c1ef3e43cfacdc883eb1d8cc1c0558a1903b4938a72",
+    "fundMilestone": "0xeb3e218c6e6499684791248e49e6c00ab0320b27e514ff000d6567efabb08b5a",
+    "submitMilestone": "0xc47799e9f09b144dc12ab1920a3edb71d46103f80e795e166d5a37e18a138e9d",
+    "proposeRelease": "0x5757f4a38a28fa6036d129847a3431056f785c991c3008a3a98f338bbdd673bf",
+    "approveRelease": "0x3eeee75955d89027b5854313292343c9e59ec8622dd3d6bb1314df126cd9eb48",
     "result": "freelancer received exactly 1.000000 USDC; agreement state = 4 (Completed)"
-  },
-  "provenLedgerGuarantee": {
-    "description": "On the first deployment, with an agreement left in ReleasePending after the agent proposed: approveRelease was rejected for both the agent and the freelancer, and succeeded only for the client. Contract logic is unchanged in this deployment.",
-    "agreementId": "0x4cedc65835403cc868f39f8a5e498900db200440d1b06b5f0ec5cc82f5c965b3",
-    "rejectedWith": "0x20dbc874 (NotClient)",
-    "clientSucceeded": "freelancer delta 1.000000 USDC"
-  },
-  "provenAttestorRotation": {
-    "description": "Rotated the attestor away from the deployer and back, on-chain.",
-    "oldAttestorRejectedWith": "0xdde328f8 (NotAttestor)",
-    "nonOwnerRotationRejectedWith": "0x30cd7471 (NotOwner)",
-    "result": "Rotation works; existing attestations are unaffected because attest() is single-shot per agreement."
   }
 }

@@ -2,13 +2,20 @@
 pragma solidity ^0.8.28;
 
 /// @title AgreementRegistry
-/// @notice Records that a Chainlink Confidential Workflow verified both parties agreed to the
-///         same terms, without publishing the terms. See SPEC.md §7.
+/// @notice Records that both parties to a deal signed the same terms hash. See SPEC.md §7.
 ///
-/// @dev The terms themselves never leave the TEE. All this contract stores is the hash the
-///      enclave saw and the fact that it saw both signatures. Private data in, verifiable
-///      attestation out -- the pattern that won Chainlink's Risk & Compliance and Privacy
-///      tracks at Convergence.
+/// @dev No trusted third party. Both `client` and `freelancer` sign an EIP-712 message
+///      committing to `(agreementId, termsHash, client, freelancer)` off-chain -- in
+///      practice, from their Privy embedded wallets, with the UI requiring a World Selfie
+///      Check pass immediately before the signature prompt (SPEC §6). Anyone can then
+///      submit both signatures in one transaction; the contract only records the
+///      attestation if both recover to the addresses named in it.
+///
+///      This replaces an earlier design that used a Chainlink CRE workflow as a trusted
+///      attestor. Dropping the oracle is deliberate: the "proof" the product promises is
+///      that a human (or their accountable agent) actually signed -- a wallet signature
+///      behind a Selfie Check gate demonstrates exactly that, and needs no oracle to trust.
+///      Terms themselves are never published on either design; only the hash is.
 contract AgreementRegistry {
     struct Attestation {
         bytes32 termsHash;
@@ -17,22 +24,10 @@ contract AgreementRegistry {
         uint64 attestedAt;
     }
 
-    /// @notice Owner, permitted to rotate the attestor. Immutable: nothing in the
-    ///         hackathon scope needs to transfer it, and immutability removes a
-    ///         takeover path.
-    address public immutable owner;
+    bytes32 private constant AGREEMENT_TYPEHASH =
+        keccak256("Agreement(bytes32 agreementId,bytes32 termsHash,address client,address freelancer)");
 
-    /// @notice The CRE TEE handler permitted to attest.
-    /// @dev Settable, deliberately. The workflow's signing address does not exist until
-    ///      the CRE workflow is built, and WorkEscrow binds this registry at construction
-    ///      -- so a fixed attestor would force redeploying BOTH contracts to switch over.
-    ///      Rotating here instead keeps every deployed address stable.
-    ///
-    ///      The tradeoff is explicit: the owner can change who is trusted to attest.
-    ///      Attestations already recorded are NOT invalidated by a rotation -- they were
-    ///      valid when made, and `attest` is single-shot per agreement, so a new attestor
-    ///      cannot rewrite terms an old one recorded.
-    address public attestor;
+    bytes32 private immutable DOMAIN_SEPARATOR;
 
     mapping(bytes32 agreementId => Attestation) private _attestations;
 
@@ -40,45 +35,49 @@ contract AgreementRegistry {
         bytes32 indexed agreementId, bytes32 indexed termsHash, address indexed client, address freelancer
     );
 
-    event AttestorChanged(address indexed previous, address indexed next);
-
-    error NotAttestor();
-    error NotOwner();
-    error ZeroAddress();
     error AlreadyAttested();
     error NotAttested();
+    error InvalidSignatureLength();
+    error ClientSignatureInvalid();
+    error FreelancerSignatureInvalid();
+    error SameParty();
 
-    modifier onlyAttestor() {
-        if (msg.sender != attestor) revert NotAttestor();
-        _;
+    constructor() {
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256("Tender"),
+                keccak256("1"),
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
-    constructor(address attestor_) {
-        if (attestor_ == address(0)) revert ZeroAddress();
-        owner = msg.sender;
-        attestor = attestor_;
-        emit AttestorChanged(address(0), attestor_);
-    }
-
-    /// @notice Point the registry at a new attestor -- in practice the CRE workflow's
-    ///         signer, once that workflow exists.
-    function setAttestor(address next) external {
-        if (msg.sender != owner) revert NotOwner();
-        if (next == address(0)) revert ZeroAddress();
-
-        address previous = attestor;
-        attestor = next;
-        emit AttestorChanged(previous, next);
-    }
-
-    /// @notice Record that the enclave saw both parties agree to `termsHash`.
-    /// @dev Callable only by the registered TEE handler. Idempotency is deliberate: an
-    ///      agreement attests exactly once, so a replayed workflow run cannot rewrite terms.
-    function attest(bytes32 agreementId, bytes32 termsHash, address client, address freelancer)
-        external
-        onlyAttestor
-    {
+    /// @notice Record that both `client` and `freelancer` signed `termsHash` for this agreement.
+    /// @dev Permissionless: any address may relay the transaction, since the two signatures
+    ///      are what carries authority, not the caller. Idempotent per agreement -- a replay
+    ///      of the same signatures after the first success just reverts with AlreadyAttested,
+    ///      and no signature can rewrite an agreement someone else already attested.
+    function attest(
+        bytes32 agreementId,
+        bytes32 termsHash,
+        address client,
+        address freelancer,
+        bytes calldata clientSignature,
+        bytes calldata freelancerSignature
+    ) external {
+        if (client == freelancer) revert SameParty();
         if (_attestations[agreementId].attestedAt != 0) revert AlreadyAttested();
+
+        bytes32 structHash =
+            keccak256(abi.encode(AGREEMENT_TYPEHASH, agreementId, termsHash, client, freelancer));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+
+        if (_recover(digest, clientSignature) != client) revert ClientSignatureInvalid();
+        if (_recover(digest, freelancerSignature) != freelancer) revert FreelancerSignatureInvalid();
 
         _attestations[agreementId] = Attestation({
             termsHash: termsHash,
@@ -90,6 +89,11 @@ contract AgreementRegistry {
         emit AgreementAttested(agreementId, termsHash, client, freelancer);
     }
 
+    /// @notice The EIP-712 domain separator, for constructing signatures off-chain.
+    function domainSeparator() external view returns (bytes32) {
+        return DOMAIN_SEPARATOR;
+    }
+
     function attestationOf(bytes32 agreementId) external view returns (Attestation memory) {
         Attestation memory a = _attestations[agreementId];
         if (a.attestedAt == 0) revert NotAttested();
@@ -98,5 +102,21 @@ contract AgreementRegistry {
 
     function isAttested(bytes32 agreementId) external view returns (bool) {
         return _attestations[agreementId].attestedAt != 0;
+    }
+
+    function _recover(bytes32 digest, bytes calldata signature) private pure returns (address) {
+        if (signature.length != 65) revert InvalidSignatureLength();
+
+        bytes32 r = bytes32(signature[0:32]);
+        bytes32 s = bytes32(signature[32:64]);
+        uint8 v = uint8(signature[64]);
+
+        // EIP-2 malleability guard: only accept the lower-half s values a well-formed
+        // wallet signature always produces.
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            return address(0);
+        }
+
+        return ecrecover(digest, v, r, s);
     }
 }

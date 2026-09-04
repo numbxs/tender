@@ -11,24 +11,55 @@ contract WorkEscrowTest is Test {
     AgreementRegistry registry;
     WorkEscrow escrow;
 
-    address attestor = address(0xA11E);
-    address client = address(0xC11E);
-    address freelancer = address(0xF8EE);
+    address client;
+    uint256 clientKey;
+    address freelancer;
+    uint256 freelancerKey;
     address agent = address(0xA6E7);
 
     bytes32 constant ID = keccak256("agreement-1");
     bytes32 constant TERMS = keccak256("private terms");
 
     function setUp() public {
-        registry = new AgreementRegistry(attestor);
+        (client, clientKey) = makeAddrAndKey("client");
+        (freelancer, freelancerKey) = makeAddrAndKey("freelancer");
+
+        registry = new AgreementRegistry();
         escrow = new WorkEscrow(registry);
 
         vm.deal(client, 1_000e6 * 1e12);
     }
 
+    /// Builds the same EIP-712 digest the contract derives internally, using its own
+    /// domainSeparator() rather than recomputing it -- that view is the intended way an
+    /// off-chain signer would build this digest too.
+    function _digest(bytes32 agreementId, bytes32 termsHash, address c, address f)
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "Agreement(bytes32 agreementId,bytes32 termsHash,address client,address freelancer)"
+                ),
+                agreementId,
+                termsHash,
+                c,
+                f
+            )
+        );
+        return keccak256(abi.encodePacked("\x19\x01", registry.domainSeparator(), structHash));
+    }
+
+    function _sign(uint256 key, bytes32 digest) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest);
+        return abi.encodePacked(r, s, v);
+    }
+
     function _attest() internal {
-        vm.prank(attestor);
-        registry.attest(ID, TERMS, client, freelancer);
+        bytes32 digest = _digest(ID, TERMS, client, freelancer);
+        registry.attest(ID, TERMS, client, freelancer, _sign(clientKey, digest), _sign(freelancerKey, digest));
     }
 
     function _create(uint128 amount) internal {
@@ -38,7 +69,83 @@ contract WorkEscrowTest is Test {
         escrow.createAgreement(ID, freelancer, agent, amounts, TERMS);
     }
 
-    /// Escrow must never be funded against terms no enclave verified.
+    // ---- AgreementRegistry: signature-based attestation ----
+
+    function test_attest_withBothValidSignaturesSucceeds() public {
+        _attest();
+        assertTrue(registry.isAttested(ID));
+
+        AgreementRegistry.Attestation memory a = registry.attestationOf(ID);
+        assertEq(a.termsHash, TERMS);
+        assertEq(a.client, client);
+        assertEq(a.freelancer, freelancer);
+    }
+
+    function test_attest_revertsOnWrongClientSignature() public {
+        bytes32 digest = _digest(ID, TERMS, client, freelancer);
+        // Freelancer's key standing in for the client's -- must not verify.
+        vm.expectRevert(AgreementRegistry.ClientSignatureInvalid.selector);
+        registry.attest(
+            ID, TERMS, client, freelancer, _sign(freelancerKey, digest), _sign(freelancerKey, digest)
+        );
+    }
+
+    function test_attest_revertsOnWrongFreelancerSignature() public {
+        bytes32 digest = _digest(ID, TERMS, client, freelancer);
+        vm.expectRevert(AgreementRegistry.FreelancerSignatureInvalid.selector);
+        registry.attest(ID, TERMS, client, freelancer, _sign(clientKey, digest), _sign(clientKey, digest));
+    }
+
+    /// A signature over a DIFFERENT agreementId must not authorize this one -- otherwise
+    /// one signed agreement could be replayed to attest an unrelated deal between the
+    /// same two parties.
+    function test_attest_signatureDoesNotTransferAcrossAgreementIds() public {
+        bytes32 otherId = keccak256("agreement-2");
+        bytes32 digestForOther = _digest(otherId, TERMS, client, freelancer);
+
+        vm.expectRevert(AgreementRegistry.ClientSignatureInvalid.selector);
+        registry.attest(
+            ID,
+            TERMS,
+            client,
+            freelancer,
+            _sign(clientKey, digestForOther),
+            _sign(freelancerKey, digestForOther)
+        );
+    }
+
+    function test_attest_revertsIfClientEqualsFreelancer() public {
+        bytes32 digest = _digest(ID, TERMS, client, client);
+        vm.expectRevert(AgreementRegistry.SameParty.selector);
+        registry.attest(ID, TERMS, client, client, _sign(clientKey, digest), _sign(clientKey, digest));
+    }
+
+    function test_attest_isIdempotentOnce() public {
+        _attest();
+        bytes32 digest = _digest(ID, keccak256("rewritten"), client, freelancer);
+        vm.expectRevert(AgreementRegistry.AlreadyAttested.selector);
+        registry.attest(
+            ID,
+            keccak256("rewritten"),
+            client,
+            freelancer,
+            _sign(clientKey, digest),
+            _sign(freelancerKey, digest)
+        );
+    }
+
+    function test_attest_isPermissionless() public {
+        // Neither party needs to be msg.sender -- a third party (e.g. the UI's own relayer)
+        // can submit the transaction, since authority comes from the two signatures.
+        bytes32 digest = _digest(ID, TERMS, client, freelancer);
+        vm.prank(address(0xD00D));
+        registry.attest(ID, TERMS, client, freelancer, _sign(clientKey, digest), _sign(freelancerKey, digest));
+        assertTrue(registry.isAttested(ID));
+    }
+
+    // ---- WorkEscrow ----
+
+    /// Escrow must never be funded against terms neither party actually signed.
     function test_createAgreement_revertsWithoutAttestation() public {
         uint128[] memory amounts = new uint128[](1);
         amounts[0] = 100e6;
@@ -129,59 +236,6 @@ contract WorkEscrowTest is Test {
         vm.prank(client);
         vm.expectRevert(WorkEscrow.WrongValue.selector);
         escrow.fundMilestone{value: 100e6}(ID, 0);
-    }
-
-    function test_onlyAttestorCanAttest() public {
-        vm.prank(client);
-        vm.expectRevert(AgreementRegistry.NotAttestor.selector);
-        registry.attest(ID, TERMS, client, freelancer);
-    }
-
-    function test_setAttestor_rotatesAndEmits() public {
-        address next = address(0xBEEF);
-        vm.expectEmit(true, true, false, false);
-        emit AgreementRegistry.AttestorChanged(attestor, next);
-        registry.setAttestor(next);
-        assertEq(registry.attestor(), next);
-
-        // The old attestor loses the right immediately.
-        vm.prank(attestor);
-        vm.expectRevert(AgreementRegistry.NotAttestor.selector);
-        registry.attest(ID, TERMS, client, freelancer);
-
-        vm.prank(next);
-        registry.attest(ID, TERMS, client, freelancer);
-        assertTrue(registry.isAttested(ID));
-    }
-
-    function test_setAttestor_onlyOwner() public {
-        vm.prank(client);
-        vm.expectRevert(AgreementRegistry.NotOwner.selector);
-        registry.setAttestor(address(0xBEEF));
-    }
-
-    function test_setAttestor_rejectsZero() public {
-        vm.expectRevert(AgreementRegistry.ZeroAddress.selector);
-        registry.setAttestor(address(0));
-    }
-
-    /// Rotating the attestor must not let anyone rewrite terms already recorded.
-    function test_rotationCannotRewriteExistingAttestation() public {
-        _attest();
-        registry.setAttestor(address(0xBEEF));
-
-        vm.prank(address(0xBEEF));
-        vm.expectRevert(AgreementRegistry.AlreadyAttested.selector);
-        registry.attest(ID, keccak256("rewritten"), client, freelancer);
-
-        assertEq(registry.attestationOf(ID).termsHash, TERMS);
-    }
-
-    function test_attestationIsIdempotentOnce() public {
-        _attest();
-        vm.prank(attestor);
-        vm.expectRevert(AgreementRegistry.AlreadyAttested.selector);
-        registry.attest(ID, keccak256("rewritten terms"), client, freelancer);
     }
 
     function test_multiMilestone_staysActiveUntilFinalRelease() public {

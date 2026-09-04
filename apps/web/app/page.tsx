@@ -41,9 +41,9 @@ export default function Home() {
         <p className="muted">Live on Arc testnet — escrow, milestones and release.</p>
         <dl className="kv">
           <dt>WorkEscrow</dt>
-          <dd className="mono">0xB3BCed454ae4fE21bD1565F99B88c93CE346E178</dd>
+          <dd className="mono">0x965Aea68F10d8Fe1ceb84360BE5b093E9e7199F7</dd>
           <dt>AgreementRegistry</dt>
-          <dd className="mono">0x418334198D6471E68E398F83F10Bad71C3beC56e</dd>
+          <dd className="mono">0x21302eb2589efD199Be5f29A0c576991F0A4Cc68</dd>
         </dl>
       </section>
     </main>
