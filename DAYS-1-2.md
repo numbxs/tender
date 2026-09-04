@@ -75,7 +75,7 @@ are what slip.
       spec and get a Gateway responding. It is a first-time sponsor with thin docs;
       find out on day 1 whether it works, not on day 11.
       **Record the username in `.env.local` — it is a submission requirement.**
-- [~] **C2 · World developer app.** app_id set, /api/verify built with the nullifier reuse check. Needs WORLD_RP_ID + signing key. Get `NEXT_PUBLIC_WORLD_APP_ID`.
+- [x] **C2 · World developer app.** ✅ app_id, RP ID, signing key all set. /api/verify tested live against World's v4 API -- confirmed reachable, correct RP, correct error surfacing. Fixed a response-field bug (`nullifier` not `nullifier_hash`) that would have silently broken verification. Remaining: wire IDKit client-side to actually collect a real proof. Get `NEXT_PUBLIC_WORLD_APP_ID`.
       Read the Selfie Check docs and confirm our reading: it returns a medium-assurance
       *signal*, not an identity.
 - [ ] **C3 · Start `FEEDBACK-world.md` today.** Every rough edge, while you hit it.
