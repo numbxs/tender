@@ -1,6 +1,5 @@
 import { AuthPanel } from "@/components/AuthPanel";
 import { SetupNotice } from "@/components/SetupNotice";
-import { RiskPolicyTable } from "@/components/RiskPolicyTable";
 import { WorldGateDemo } from "@/components/WorldGateDemo";
 
 const missing = [
@@ -28,15 +27,6 @@ export default function Home() {
       {/* Privy hooks throw outside PrivyProvider, and Providers omits the provider
           when there is no app id -- so the panel only mounts once it is configured. */}
       {process.env.NEXT_PUBLIC_PRIVY_APP_ID && <AuthPanel />}
-
-      <section>
-        <h2>Risk policy</h2>
-        <p className="muted">
-          Rendered live from <code>@tender/shared</code>. A selfie has to <em>change what the
-          product allows</em>, so most actions are deliberately ungated.
-        </p>
-        <RiskPolicyTable />
-      </section>
 
       <section>
         <h2>World Selfie Check</h2>
