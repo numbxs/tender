@@ -1,6 +1,7 @@
 import { AuthPanel } from "@/components/AuthPanel";
 import { SetupNotice } from "@/components/SetupNotice";
 import { RiskPolicyTable } from "@/components/RiskPolicyTable";
+import { WorldGateDemo } from "@/components/WorldGateDemo";
 
 const missing = [
   ["NEXT_PUBLIC_PRIVY_APP_ID", process.env.NEXT_PUBLIC_PRIVY_APP_ID],
@@ -35,6 +36,14 @@ export default function Home() {
           product allows</em>, so most actions are deliberately ungated.
         </p>
         <RiskPolicyTable />
+      </section>
+
+      <section>
+        <h2>World Selfie Check</h2>
+        <p className="muted">
+          Live against World's v4 API — not a mock. Gates a consequential action, per SPEC §6.
+        </p>
+        <WorldGateDemo />
       </section>
 
       <section>

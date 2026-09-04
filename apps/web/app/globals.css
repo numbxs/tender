@@ -90,3 +90,7 @@ th {
   color: var(--ink-3); font-weight: 600;
 }
 td { padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+
+.world-gate { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.verified { color: var(--accent); font-weight: 600; margin: 0; }
+.error { color: var(--crowded, #b5533f); margin: 0; }

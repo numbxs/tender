@@ -3,7 +3,7 @@
  *
  * The design decision that matters:
  *
- * World returns a `nullifier_hash` that is unique per (app, action). That is the
+ * World returns a `nullifier` that is unique per (app, action). That is the
  * whole uniqueness signal — so the ACTION MUST BE STABLE across users. Scoping
  * an action per-user (e.g. `release-${userId}`) gives every user a different
  * nullifier namespace and destroys the ability to tell whether the same human

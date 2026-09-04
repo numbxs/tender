@@ -75,7 +75,7 @@ are what slip.
       spec and get a Gateway responding. It is a first-time sponsor with thin docs;
       find out on day 1 whether it works, not on day 11.
       **Record the username in `.env.local` — it is a submission requirement.**
-- [x] **C2 · World developer app.** ✅ app_id, RP ID, signing key all set. /api/verify tested live against World's v4 API -- confirmed reachable, correct RP, correct error surfacing. Fixed a response-field bug (`nullifier` not `nullifier_hash`) that would have silently broken verification. Remaining: wire IDKit client-side to actually collect a real proof. Get `NEXT_PUBLIC_WORLD_APP_ID`.
+- [x] **C2 · World developer app.** ✅ Full loop wired and tested live: server-side rp_context signing (@worldcoin/idkit-server), IDKitRequestButton requesting the raw `selfie` credential (not the preview-gated SelfieCheckLegacy preset), verified against /api/verify. Confirmed in-browser up to "Waiting for World App" -- everything short of an actual phone completing the scan. Get `NEXT_PUBLIC_WORLD_APP_ID`.
       Read the Selfie Check docs and confirm our reading: it returns a medium-assurance
       *signal*, not an identity.
 - [ ] **C3 · Start `FEEDBACK-world.md` today.** Every rough edge, while you hit it.
