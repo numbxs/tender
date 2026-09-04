@@ -71,10 +71,12 @@ Owns Privy, ENS, World. Owns the demo, because Privy is judged on polish.
 Owns the integrations. Front-loads everything with an unknown vendor, because those
 are what slip.
 
-- [ ] **C1 · Bazantic first, not last.** Account exists — submit the gateway's OpenAPI
-      spec and get a Gateway responding. It is a first-time sponsor with thin docs;
-      find out on day 1 whether it works, not on day 11.
-      **Record the username in `.env.local` — it is a submission requirement.**
+- [~] **C1 · Bazantic.** ✅ Real CLI login (device flow, approved in browser), gateway
+      registered against a live tunneled endpoint -- verified /health and /bids/quote
+      answered 200 BEFORE registering, not after. Draft status: pricing review and
+      activation need the dashboard (no CLI equivalent). **Endpoint is an ephemeral
+      ngrok URL -- must be replaced with a persistent deploy before submission.**
+      See deployments/bazantic-gateway.json.
 - [x] **C2 · World developer app.** ✅ Full loop wired and tested live: server-side rp_context signing (@worldcoin/idkit-server), IDKitRequestButton requesting the raw `selfie` credential (not the preview-gated SelfieCheckLegacy preset), verified against /api/verify. Confirmed in-browser up to "Waiting for World App" -- everything short of an actual phone completing the scan. Get `NEXT_PUBLIC_WORLD_APP_ID`.
       Read the Selfie Check docs and confirm our reading: it returns a medium-assurance
       *signal*, not an identity.

@@ -1,0 +1,32 @@
+{
+  "provider": "Bazantic",
+  "registeredAt": "2026-09-04T21:02:39Z",
+  "gateway": {
+    "id": "9b699650-173c-4a31-a308-22c043d66c9a",
+    "slug": "tnuzmuaxhrfddiyielaehvtmti",
+    "name": "Tender Bid Gateway",
+    "status": "draft",
+    "endpointUrl": "https://tnuzmuaxhrfddiyielaehvtmti.bazgateway.com",
+    "mcpUrl": "https://tnuzmuaxhrfddiyielaehvtmti.bazgateway.com/mcp",
+    "authType": "x402-mpp",
+    "category": "data"
+  },
+  "registeredAgainst": {
+    "specUrl": "https://raw.githubusercontent.com/numbxs/tender/main/services/gateway/openapi.yaml",
+    "endpoint": "https://7091-104-28-245-42.ngrok-free.app",
+    "endpointKind": "ngrok free-tier tunnel to local services/gateway",
+    "verifiedLiveBeforeRegistering": ["GET /health -> 200", "GET /bids/quote -> 200"]
+  },
+  "knownGaps": {
+    "endpointIsEphemeral": "The registered --endpoint is an ngrok free-tier URL. It dies when the ngrok process stops, and a fresh `ngrok http 8787` issues a NEW random URL that will NOT match what Bazantic has on file. There is no `baz gateway update` -- the CLI surface is only add/list. Before the actual submission, either (a) deploy services/gateway somewhere persistent (Fly.io, Render, a VPS) and re-register, or (b) get a reserved ngrok subdomain so the URL is stable across restarts.",
+    "draftStatus": "Registered as draft, not active. Two things have no CLI equivalent and need the Bazantic dashboard: reviewing/setting real per-method prices (every discovered method starts at a default), and flipping status from draft to active. auth-type x402-mpp needs no credential entry, so that step is already done.",
+    "mcp404WhileDraft": "GET /mcp on the gateway 404s right now. Per Bazantic's own docs this is expected for a draft gateway -- mcp:true in the listing is eligibility, not confirmation a server is deployed and answering. Re-check with tools/list after activation."
+  },
+  "next": [
+    "Deploy services/gateway to a persistent host, or reserve a stable tunnel domain",
+    "Re-register (or update once the CLI supports it) with the stable endpoint",
+    "Set real per-method prices in the dashboard to match X402_BID_PRICE_USDC",
+    "Activate, then confirm /mcp answers via tools/list",
+    "Create a recipe using this gateway for the 'Best Recipe' track"
+  ]
+}

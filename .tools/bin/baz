@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "$(dirname "$0")/../bazantic-cli/node_modules/.bin/baz" "$@"
